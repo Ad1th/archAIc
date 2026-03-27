@@ -18,6 +18,8 @@ import logging
 import hashlib
 import hmac
 import asyncio
+import random
+import threading
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, HTTPException, Header, Query, Request
@@ -82,10 +84,14 @@ SECRET_KEY = os.getenv("JWT_SECRET", "archaIc-secret-key-2024")
 # In-memory user store: { email: hashed_password }
 _users: dict[str, str] = {}
 
-# Failure injection state
-_failure_state: dict = {
-    "type": None,  # "timeout" | "error" | "cpu" | "crash" | None
+failure_config: dict = {
+    "enabled": False,
+    "type": None,
+    "intensity": 1,
+    "probability": 1.0,
+    "duration": None,
 }
+failure_start_time = None
 
 
 def _hash_password(password: str) -> str:
@@ -118,20 +124,39 @@ def _log(level: str, message: str, trace_id: str = "N/A"):
 
 
 async def _apply_failure(trace_id: str):
-    ftype = _failure_state.get("type")
+    global failure_start_time
+
+    if not failure_config.get("enabled", False):
+        return
+
+    duration = failure_config.get("duration")
+    if duration is not None:
+        if failure_start_time is None:
+            failure_start_time = time.time()
+        elif (time.time() - failure_start_time) > duration:
+            failure_config.update({"enabled": False, "type": None})
+            failure_start_time = None
+            return
+
+    probability = failure_config.get("probability", 1.0)
+    if random.random() > probability:
+        return
+
+    ftype = failure_config.get("type")
+    intensity = max(1, int(failure_config.get("intensity", 1)))
+    _log("ERROR", f"Failure triggered: {ftype}", trace_id)
+
     if ftype == "timeout":
-        _log("warning", "Injected timeout — sleeping 10s", trace_id)
-        await asyncio.sleep(10)
+        await asyncio.sleep(2 * intensity)
     elif ftype == "error":
-        _log("error", "Injected error — raising 500", trace_id)
-        raise HTTPException(status_code=500, detail="Injected failure: error")
+        raise HTTPException(status_code=500, detail="Simulated failure")
     elif ftype == "cpu":
-        _log("warning", "Injected CPU spike — busy loop", trace_id)
-        end = time.time() + 2
-        while time.time() < end:
-            _ = sum(range(10_000))
+        def _cpu_burn_forever():
+            while True:
+                _ = sum(range(100_000))
+
+        threading.Thread(target=_cpu_burn_forever, daemon=True).start()
     elif ftype == "crash":
-        _log("critical", "Injected crash — service terminating", trace_id)
         os._exit(1)
 
 
@@ -176,8 +201,8 @@ async def signup(user: UserCredentials, request: Request):
 @app.post("/login")
 async def login(user: UserCredentials, request: Request):
     trace_id = request.state.trace_id
-    _log("info", f"Login attempt: {user.email}", trace_id)
     await _apply_failure(trace_id)
+    _log("info", f"Login attempt: {user.email}", trace_id)
 
     stored = _users.get(user.email)
     if stored is None or stored != _hash_password(user.password):
@@ -206,22 +231,52 @@ async def validate(request: Request, authorization: str = Header(...)):
 
 @app.get("/health")
 async def health():
-    return {"status": "healthy", "service": "auth-service", "failure": _failure_state["type"]}
+    return {"status": "healthy", "service": "auth-service", "failure": failure_config["type"]}
 
 
 # ─── Failure Injection ────────────────────────────────────────────────────────
 
 @app.post("/inject-failure")
-async def inject_failure(type: str = Query(..., description="timeout | error | cpu | crash")):
+async def inject_failure(
+    type: str = Query(..., description="timeout | error | cpu | crash"),
+    intensity: int = Query(1),
+    probability: float = Query(1.0),
+    duration: Optional[int] = Query(None),
+):
+    global failure_start_time
+
     if type not in ("timeout", "error", "cpu", "crash"):
         raise HTTPException(status_code=400, detail="Invalid failure type. Use: timeout, error, cpu, crash")
-    _failure_state["type"] = type
+    if intensity < 1:
+        raise HTTPException(status_code=400, detail="intensity must be >= 1")
+    if probability < 0 or probability > 1:
+        raise HTTPException(status_code=400, detail="probability must be between 0 and 1")
+    if duration is not None and duration < 1:
+        raise HTTPException(status_code=400, detail="duration must be >= 1 when provided")
+
+    failure_config.update({
+        "enabled": True,
+        "type": type,
+        "intensity": intensity,
+        "probability": probability,
+        "duration": duration,
+    })
+    failure_start_time = None
     _log("warning", f"Failure injected: {type}", "SYSTEM")
-    return {"injected": type, "service": "auth-service"}
+    return {"service": "auth-service", "failure_config": failure_config}
 
 
 @app.post("/reset")
 async def reset():
-    _failure_state["type"] = None
+    global failure_start_time
+
+    failure_config.update({
+        "enabled": False,
+        "type": None,
+        "intensity": 1,
+        "probability": 1.0,
+        "duration": None,
+    })
+    failure_start_time = None
     _log("info", "Failure state reset to normal", "SYSTEM")
     return {"status": "reset", "service": "auth-service"}
