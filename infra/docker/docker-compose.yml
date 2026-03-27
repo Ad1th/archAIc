@@ -151,6 +151,21 @@ services:
     networks:
       - archaIc-net
 
+  # ── ML Anomaly Detector Service ─────────────────────────────────────────────
+  anomaly-detector:
+    build: ../../services/anomaly-detector
+    container_name: anomaly-detector
+    ports:
+      - "8006:8006"
+    environment:
+      - PROMETHEUS_URL=http://prometheus:9090
+      - AI_OPERATOR_URL=http://ai-operator:8005
+    networks:
+      - archaIc-net
+    depends_on:
+      - prometheus
+      - ai-operator
+
 networks:
   archaIc-net:
     driver: bridge

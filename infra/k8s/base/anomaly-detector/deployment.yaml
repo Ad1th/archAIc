@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: anomaly-detector
+  labels:
+    app: anomaly-detector
+    app.kubernetes.io/part-of: archaics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: anomaly-detector
+  template:
+    metadata:
+      labels:
+        app: anomaly-detector
+    spec:
+      containers:
+        - name: anomaly-detector
+          image: anomaly-detector:latest
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 8006
+          env:
+            - name: PROMETHEUS_URL
+              value: "http://prometheus.observability.svc.cluster.local:9090"
+            - name: AI_OPERATOR_URL
+              value: "http://ai-operator.archaics.svc.cluster.local:8005"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8006
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8006
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
