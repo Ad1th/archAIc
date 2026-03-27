@@ -33,6 +33,13 @@ This chain is what enables Root Cause Analysis in Layer 2.
 docker-compose up --build
 ```
 
+```
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo add jaegertracing https://jaegertracing.github.io/helm-charts
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+```
+
 All three services start with health checks. `product-service` waits for the other two before starting.
 
 ### Without Docker (local dev)
@@ -61,36 +68,36 @@ uvicorn main:app --port 8003 --reload
 
 ### Auth Service — `http://localhost:8001`
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/signup` | Register a user |
-| POST | `/login` | Login, get JWT token |
-| GET | `/validate` | Validate a token (used by product-service) |
-| GET | `/health` | Health + failure state |
-| POST | `/inject-failure?type=X` | Inject failure |
-| POST | `/reset` | Clear failure |
+| Method | Endpoint                 | Description                                |
+| ------ | ------------------------ | ------------------------------------------ |
+| POST   | `/signup`                | Register a user                            |
+| POST   | `/login`                 | Login, get JWT token                       |
+| GET    | `/validate`              | Validate a token (used by product-service) |
+| GET    | `/health`                | Health + failure state                     |
+| POST   | `/inject-failure?type=X` | Inject failure                             |
+| POST   | `/reset`                 | Clear failure                              |
 
 ### DB Service — `http://localhost:8002`
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/products` | All products |
-| POST | `/cart/add` | Add item to cart |
-| GET | `/cart/{user_id}` | Get user cart |
-| GET | `/health` | Health + failure state |
-| POST | `/inject-failure?type=X` | Inject failure |
-| POST | `/reset` | Clear failure |
+| Method | Endpoint                 | Description            |
+| ------ | ------------------------ | ---------------------- |
+| GET    | `/products`              | All products           |
+| POST   | `/cart/add`              | Add item to cart       |
+| GET    | `/cart/{user_id}`        | Get user cart          |
+| GET    | `/health`                | Health + failure state |
+| POST   | `/inject-failure?type=X` | Inject failure         |
+| POST   | `/reset`                 | Clear failure          |
 
 ### Product Service — `http://localhost:8003`
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/products` | Fetch catalog (requires auth token) |
-| POST | `/cart/add` | Add to cart (requires auth token) |
-| GET | `/cart` | View cart (requires auth token) |
-| GET | `/health` | Health + failure state |
-| POST | `/inject-failure?type=X` | Inject failure |
-| POST | `/reset` | Clear failure |
+| Method | Endpoint                 | Description                         |
+| ------ | ------------------------ | ----------------------------------- |
+| GET    | `/products`              | Fetch catalog (requires auth token) |
+| POST   | `/cart/add`              | Add to cart (requires auth token)   |
+| GET    | `/cart`                  | View cart (requires auth token)     |
+| GET    | `/health`                | Health + failure state              |
+| POST   | `/inject-failure?type=X` | Inject failure                      |
+| POST   | `/reset`                 | Clear failure                       |
 
 ---
 
@@ -98,13 +105,13 @@ uvicorn main:app --port 8003 --reload
 
 Each service supports the `POST /inject-failure?type=<TYPE>` endpoint.
 
-| Type | Effect |
-|------|--------|
-| `timeout` | Sleeps 10-15s (simulates hang) |
-| `error` | Returns HTTP 500/503 |
-| `cpu` | Busy loop for 2-3s (CPU spike) |
-| `crash` | Process exits (`os._exit(1)`) |
-| `bad_data` | Returns corrupted data *(DB only)* |
+| Type       | Effect                             |
+| ---------- | ---------------------------------- |
+| `timeout`  | Sleeps 10-15s (simulates hang)     |
+| `error`    | Returns HTTP 500/503               |
+| `cpu`      | Busy loop for 2-3s (CPU spike)     |
+| `crash`    | Process exits (`os._exit(1)`)      |
+| `bad_data` | Returns corrupted data _(DB only)_ |
 
 Reset with `POST /reset`.
 
