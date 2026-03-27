@@ -1,9 +1,7 @@
-
 services:
-
   # ── Auth Service ────────────────────────────────────────────────────────────
   auth-service:
-    build: ./auth
+    build: ../../services/auth
     container_name: auth-service
     ports:
       - "8001:8001"
@@ -11,7 +9,13 @@ services:
       JWT_SECRET: archaIc-secret-key-2024
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')",
+        ]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -20,14 +24,20 @@ services:
 
   # ── DB Service ──────────────────────────────────────────────────────────────
   db-service:
-    build: ./db
+    build: ../../services/db
     container_name: db-service
     ports:
       - "8002:8002"
     environment:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8002/health')"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8002/health')",
+        ]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -36,7 +46,7 @@ services:
 
   # ── Product/Cart Service ────────────────────────────────────────────────────
   product-service:
-    build: ./product
+    build: ../../services/product
     container_name: product-service
     ports:
       - "8003:8003"
@@ -51,7 +61,13 @@ services:
       db-service:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8003/health')"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8003/health')",
+        ]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -63,7 +79,7 @@ services:
     image: prom/prometheus:latest
     container_name: prometheus
     volumes:
-      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ../../observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
     networks:
@@ -76,7 +92,7 @@ services:
       - COLLECTOR_OTLP_ENABLED=true
     ports:
       - "16686:16686" # Web UI
-      - "4318:4318"   # OTLP HTTP receiver
+      - "4318:4318" # OTLP HTTP receiver
     networks:
       - archaIc-net
 
@@ -84,7 +100,7 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     volumes:
-      - ./observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ../../observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
@@ -96,7 +112,7 @@ services:
       - jaeger
   # ── Payment Service ─────────────────────────────────────────────────────────
   payment-service:
-    build: ./payment
+    build: ../../services/payment
     container_name: payment-service
     ports:
       - "8004:8004"
@@ -111,7 +127,13 @@ services:
       db-service:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8004/health')"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8004/health')",
+        ]
       interval: 10s
       timeout: 5s
       retries: 3

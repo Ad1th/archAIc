@@ -1,18 +1,18 @@
-# Product Service API
+# DB Service API
 
-Base URL (local): `http://localhost:8003`
+Base URL (local): `http://localhost:8002`
+Service directory: `services/db`
 
-This service injects/propagates `X-Trace-ID` for all requests and calls auth-service + db-service upstream.
+This service injects/propagates `X-Trace-ID` for all requests.
 
 ## Header Conventions
 
 ### Request Headers
 
-| Header                           | Required                                                    | Notes                               |
-| -------------------------------- | ----------------------------------------------------------- | ----------------------------------- |
-| `Authorization: Bearer <token>`  | Required for `GET /products`, `POST /cart/add`, `GET /cart` | Token is validated via auth-service |
-| `Content-Type: application/json` | Required for `POST /cart/add`                               | JSON body endpoint                  |
-| `X-Trace-ID`                     | Optional on all routes                                      | If omitted, service generates UUID  |
+| Header                           | Required                      | Notes                              |
+| -------------------------------- | ----------------------------- | ---------------------------------- |
+| `Content-Type: application/json` | Required for `POST /cart/add` | JSON body endpoint                 |
+| `X-Trace-ID`                     | Optional on all routes        | If omitted, service generates UUID |
 
 ### Response Headers (all routes)
 
@@ -25,47 +25,42 @@ This service injects/propagates `X-Trace-ID` for all requests and calls auth-ser
 
 ### 1) GET `/products`
 
-Return product catalog after auth validation.
+Fetch all products.
 
 - Request headers:
-  - `Authorization: Bearer <token>` (required)
   - `X-Trace-ID` (optional)
 - Request body: none
 
 - Success response (`200`):
 
 ```json
-{
-  "products": [
-    {
-      "id": "p1",
-      "name": "Wireless Headphones",
-      "price": 79.99,
-      "stock": 50
-    }
-  ],
-  "trace_id": "<uuid>"
-}
+[
+  {
+    "id": "p1",
+    "name": "Wireless Headphones",
+    "price": 79.99,
+    "stock": 50
+  }
+]
 ```
 
 - Common error responses:
-  - `401` auth validation failed
-  - `503` auth/db service unreachable
-  - `504` auth/db service timeout
-  - `500` injected failure (`type=error`)
+  - `503` injected DB error (`type=error`)
+
+Note: when failure mode is `bad_data`, this route intentionally returns corrupted values such as `name: null` and `price: -1`.
 
 ### 2) POST `/cart/add`
 
-Add authenticated user item to cart.
+Add a product to a user cart and decrement stock.
 
 - Request headers:
-  - `Authorization: Bearer <token>` (required)
   - `Content-Type: application/json` (required)
   - `X-Trace-ID` (optional)
 - Request body:
 
 ```json
 {
+  "user_id": "alice",
   "product_id": "p1",
   "quantity": 2
 }
@@ -89,20 +84,18 @@ Add authenticated user item to cart.
 ```
 
 - Common error responses:
-  - `401` auth validation failed
-  - `404` product not found (from db-service)
-  - `409` insufficient stock (from db-service)
-  - `503` auth/db service unreachable
-  - `504` auth/db service timeout
-  - `500` injected failure (`type=error`)
+  - `404` product not found
+  - `409` insufficient stock
+  - `503` injected DB error (`type=error`)
 
-### 3) GET `/cart`
+### 3) GET `/cart/{user_id}`
 
-Fetch authenticated user cart.
+Fetch cart for specific user ID.
 
 - Request headers:
-  - `Authorization: Bearer <token>` (required)
   - `X-Trace-ID` (optional)
+- Path params:
+  - `user_id` (required)
 - Request body: none
 
 - Success response (`200`):
@@ -124,10 +117,7 @@ Fetch authenticated user cart.
 ```
 
 - Common error responses:
-  - `401` auth validation failed
-  - `503` auth/db service unreachable
-  - `504` auth/db service timeout
-  - `500` injected failure (`type=error`)
+  - `503` injected DB error (`type=error`)
 
 ### 4) GET `/health`
 
@@ -142,19 +132,19 @@ Health and current failure mode.
 ```json
 {
   "status": "healthy",
-  "service": "product-service",
+  "service": "db-service",
   "failure": null
 }
 ```
 
-### 5) POST `/inject-failure?type=<timeout|error|cpu|crash>&intensity=1&probability=1.0&duration=<seconds>`
+### 5) POST `/inject-failure?type=<timeout|error|cpu|crash|bad_data>&intensity=1&probability=1.0&duration=<seconds>`
 
 Enable failure injection mode.
 
 - Request headers:
   - `X-Trace-ID` (optional)
 - Query params:
-  - `type` (required): `timeout`, `error`, `cpu`, `crash`
+  - `type` (required): `timeout`, `error`, `cpu`, `crash`, `bad_data`
   - `intensity` (optional, default `1`): positive integer multiplier
   - `probability` (optional, default `1.0`): trigger chance per request in range `0.0` to `1.0`
   - `duration` (optional): seconds before failure auto-disables
@@ -164,10 +154,10 @@ Enable failure injection mode.
 
 ```json
 {
-  "service": "product-service",
+  "service": "db-service",
   "failure_config": {
     "enabled": true,
-    "type": "timeout",
+    "type": "bad_data",
     "intensity": 1,
     "probability": 1.0,
     "duration": null
@@ -185,6 +175,7 @@ Failure behavior notes:
 - `error`: returns HTTP `500` with `Simulated failure`
 - `cpu`: starts background CPU pressure
 - `crash`: terminates process
+- `bad_data`: returns intentionally corrupted product payloads
 
 ### 6) POST `/reset`
 
@@ -199,6 +190,6 @@ Disable failure injection mode.
 ```json
 {
   "status": "reset",
-  "service": "product-service"
+  "service": "db-service"
 }
 ```

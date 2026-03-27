@@ -5,6 +5,10 @@
 
 ---
 
+Service directory: `services/payment`
+
+---
+
 ## Architecture
 
 ```
@@ -31,7 +35,7 @@ Payment Service   :8004   ← Entry point for checkout
 From repo root:
 
 ```bash
-docker-compose up --build
+docker compose -f infra/docker/docker-compose.yml up --build
 ```
 
 Payment service starts at `http://localhost:8004` after auth + db services are healthy.
@@ -39,7 +43,7 @@ Payment service starts at `http://localhost:8004` after auth + db services are h
 ### Without Docker (local dev)
 
 ```bash
-cd payment
+cd services/payment
 pip install -r requirements.txt
 export STRIPE_API_KEY=sk_test_dummy
 export AUTH_SERVICE_URL=http://localhost:8001
@@ -337,7 +341,7 @@ Useful for **testing without real Stripe account**.
 
 ### With Real Stripe Key
 
-Set `STRIPE_API_KEY=sk_test_<your_real_key>` in docker-compose.yml or environment.
+Set `STRIPE_API_KEY=sk_test_<your_real_key>` in `infra/docker/docker-compose.yml` or environment.
 
 Returns real Stripe checkout URLs:
 
@@ -446,5 +450,5 @@ See `requirements.txt` for versions.
 ## References
 
 - [Stripe Checkout Docs](https://stripe.com/docs/payments/checkout)
-- [Main README](../README.md) — full archAIc project overview
+- [Main README](../../README.md) — full archAIc project overview
 - Service ports: auth=8001, db=8002, product=8003, payment=8004

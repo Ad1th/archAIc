@@ -43,7 +43,7 @@ This chain is what enables Root Cause Analysis in Layer 2.
 ### With Docker (recommended)
 
 ```bash
-docker-compose up --build
+docker compose -f infra/docker/docker-compose.yml up --build
 ```
 
 ```
@@ -59,17 +59,17 @@ All three services start with health checks. `product-service` waits for the oth
 
 ```bash
 # Terminal 1 — Auth Service
-cd auth
+cd services/auth
 pip install -r requirements.txt
 uvicorn main:app --port 8001 --reload
 
 # Terminal 2 — DB Service
-cd db
+cd services/db
 pip install -r requirements.txt
 uvicorn main:app --port 8002 --reload
 
 # Terminal 3 — Product Service
-cd product
+cd services/product
 pip install -r requirements.txt
 AUTH_SERVICE_URL=http://localhost:8001 DB_SERVICE_URL=http://localhost:8002 \
 uvicorn main:app --port 8003 --reload
@@ -81,6 +81,7 @@ The repo now includes a Next.js dashboard at `http://localhost:3000/dashboard`.
 
 ```bash
 # Install frontend dependencies
+cd apps/dashboard
 npm install
 
 # Start the dashboard

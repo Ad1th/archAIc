@@ -39,6 +39,9 @@ out/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+apps/dashboard/node_modules/
+apps/dashboard/.next/
+apps/dashboard/out/
 
 # ── IDE / Editor ──────────────────────────────────────────────────────────────
 .vscode/

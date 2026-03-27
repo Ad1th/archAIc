@@ -1,18 +1,19 @@
-# Auth Service API
+# Product Service API
 
-Base URL (local): `http://localhost:8001`
+Base URL (local): `http://localhost:8003`
+Service directory: `services/product`
 
-This service injects/propagates `X-Trace-ID` for all requests.
+This service injects/propagates `X-Trace-ID` for all requests and calls auth-service + db-service upstream.
 
 ## Header Conventions
 
 ### Request Headers
 
-| Header                           | Required                                   | Notes                              |
-| -------------------------------- | ------------------------------------------ | ---------------------------------- |
-| `Content-Type: application/json` | Required for `POST /signup`, `POST /login` | JSON body endpoints                |
-| `Authorization: Bearer <token>`  | Required for `GET /validate`               | Validates token signature          |
-| `X-Trace-ID`                     | Optional on all routes                     | If omitted, service generates UUID |
+| Header                           | Required                                                    | Notes                               |
+| -------------------------------- | ----------------------------------------------------------- | ----------------------------------- |
+| `Authorization: Bearer <token>`  | Required for `GET /products`, `POST /cart/add`, `GET /cart` | Token is validated via auth-service |
+| `Content-Type: application/json` | Required for `POST /cart/add`                               | JSON body endpoint                  |
+| `X-Trace-ID`                     | Optional on all routes                                      | If omitted, service generates UUID  |
 
 ### Response Headers (all routes)
 
@@ -23,69 +24,9 @@ This service injects/propagates `X-Trace-ID` for all requests.
 
 ## Routes
 
-### 1) POST `/signup`
+### 1) GET `/products`
 
-Register a new user and return an access token.
-
-- Request headers:
-  - `Content-Type: application/json` (required)
-  - `X-Trace-ID` (optional)
-- Request body:
-
-```json
-{
-  "email": "alice@example.com",
-  "password": "secure123"
-}
-```
-
-- Success response (`200`):
-
-```json
-{
-  "access_token": "<token>",
-  "token_type": "bearer",
-  "trace_id": "<uuid>"
-}
-```
-
-- Common error responses:
-  - `409` email already registered
-  - `500` injected failure (`type=error`)
-
-### 2) POST `/login`
-
-Authenticate user and return an access token.
-
-- Request headers:
-  - `Content-Type: application/json` (required)
-  - `X-Trace-ID` (optional)
-- Request body:
-
-```json
-{
-  "email": "alice@example.com",
-  "password": "secure123"
-}
-```
-
-- Success response (`200`):
-
-```json
-{
-  "access_token": "<token>",
-  "token_type": "bearer",
-  "trace_id": "<uuid>"
-}
-```
-
-- Common error responses:
-  - `401` invalid credentials
-  - `500` injected failure (`type=error`)
-
-### 3) GET `/validate`
-
-Validate bearer token. Used by product-service.
+Return product catalog after auth validation.
 
 - Request headers:
   - `Authorization: Bearer <token>` (required)
@@ -96,14 +37,97 @@ Validate bearer token. Used by product-service.
 
 ```json
 {
-  "valid": true,
-  "email": "alice@example.com",
+  "products": [
+    {
+      "id": "p1",
+      "name": "Wireless Headphones",
+      "price": 79.99,
+      "stock": 50
+    }
+  ],
   "trace_id": "<uuid>"
 }
 ```
 
 - Common error responses:
-  - `401` invalid or expired token
+  - `401` auth validation failed
+  - `503` auth/db service unreachable
+  - `504` auth/db service timeout
+  - `500` injected failure (`type=error`)
+
+### 2) POST `/cart/add`
+
+Add authenticated user item to cart.
+
+- Request headers:
+  - `Authorization: Bearer <token>` (required)
+  - `Content-Type: application/json` (required)
+  - `X-Trace-ID` (optional)
+- Request body:
+
+```json
+{
+  "product_id": "p1",
+  "quantity": 2
+}
+```
+
+- Success response (`200`):
+
+```json
+{
+  "status": "added",
+  "cart": [
+    {
+      "product_id": "p1",
+      "name": "Wireless Headphones",
+      "price": 79.99,
+      "quantity": 2
+    }
+  ],
+  "trace_id": "<uuid>"
+}
+```
+
+- Common error responses:
+  - `401` auth validation failed
+  - `404` product not found (from db-service)
+  - `409` insufficient stock (from db-service)
+  - `503` auth/db service unreachable
+  - `504` auth/db service timeout
+  - `500` injected failure (`type=error`)
+
+### 3) GET `/cart`
+
+Fetch authenticated user cart.
+
+- Request headers:
+  - `Authorization: Bearer <token>` (required)
+  - `X-Trace-ID` (optional)
+- Request body: none
+
+- Success response (`200`):
+
+```json
+{
+  "user_id": "alice",
+  "items": [
+    {
+      "product_id": "p1",
+      "name": "Wireless Headphones",
+      "price": 79.99,
+      "quantity": 2
+    }
+  ],
+  "total": 159.98,
+  "trace_id": "<uuid>"
+}
+```
+
+- Common error responses:
+  - `401` auth validation failed
+  - `503` auth/db service unreachable
+  - `504` auth/db service timeout
   - `500` injected failure (`type=error`)
 
 ### 4) GET `/health`
@@ -119,7 +143,7 @@ Health and current failure mode.
 ```json
 {
   "status": "healthy",
-  "service": "auth-service",
+  "service": "product-service",
   "failure": null
 }
 ```
@@ -141,7 +165,7 @@ Enable failure injection mode.
 
 ```json
 {
-  "service": "auth-service",
+  "service": "product-service",
   "failure_config": {
     "enabled": true,
     "type": "timeout",
@@ -176,6 +200,6 @@ Disable failure injection mode.
 ```json
 {
   "status": "reset",
-  "service": "auth-service"
+  "service": "product-service"
 }
 ```
