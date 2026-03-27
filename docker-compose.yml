@@ -1,0 +1,59 @@
+
+services:
+
+  # ── Auth Service ────────────────────────────────────────────────────────────
+  auth-service:
+    build: ./auth
+    container_name: auth-service
+    ports:
+      - "8001:8001"
+    environment:
+      JWT_SECRET: archaIc-secret-key-2024
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - archaIc-net
+
+  # ── DB Service ──────────────────────────────────────────────────────────────
+  db-service:
+    build: ./db
+    container_name: db-service
+    ports:
+      - "8002:8002"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8002/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - archaIc-net
+
+  # ── Product/Cart Service ────────────────────────────────────────────────────
+  product-service:
+    build: ./product
+    container_name: product-service
+    ports:
+      - "8003:8003"
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8001
+      DB_SERVICE_URL: http://db-service:8002
+      REQUEST_TIMEOUT: "8"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      db-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8003/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - archaIc-net
+
+networks:
+  archaIc-net:
+    driver: bridge
