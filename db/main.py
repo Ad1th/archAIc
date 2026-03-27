@@ -61,13 +61,14 @@ logger.propagate = False
 app = FastAPI(title="DB Service", version="1.0.0")
 
 # ─── OpenTelemetry Setup ──────────────────────────────────────────────────────
-OTEL_ENDPOINT = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://jaeger-all-in-one:4318")
+OTEL_ENDPOINT = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "").rstrip("/")
 resource = Resource(attributes={
     "service.name": "db-service"
 })
 provider = TracerProvider(resource=resource)
-processor = BatchSpanProcessor(OTLPSpanExporter(endpoint=f"{OTEL_ENDPOINT}/v1/traces"))
-provider.add_span_processor(processor)
+if OTEL_ENDPOINT:
+    processor = BatchSpanProcessor(OTLPSpanExporter(endpoint=f"{OTEL_ENDPOINT}/v1/traces"))
+    provider.add_span_processor(processor)
 trace.set_tracer_provider(provider)
 
 FastAPIInstrumentor.instrument_app(app)
