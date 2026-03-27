@@ -75,6 +75,27 @@ AUTH_SERVICE_URL=http://localhost:8001 DB_SERVICE_URL=http://localhost:8002 \
 uvicorn main:app --port 8003 --reload
 ```
 
+### Dashboard
+
+The repo now includes a Next.js dashboard at `http://localhost:3000/dashboard`.
+
+```bash
+# Install frontend dependencies
+npm install
+
+# Start the dashboard
+npm run dev
+```
+
+By default the dashboard targets:
+
+- `AUTH_SERVICE_URL=http://127.0.0.1:8001`
+- `DB_SERVICE_URL=http://127.0.0.1:8002`
+- `PRODUCT_SERVICE_URL=http://127.0.0.1:8003`
+- `PAYMENT_SERVICE_URL=http://127.0.0.1:8004`
+
+Override those environment variables before `npm run dev` if your services are exposed elsewhere.
+
 ---
 
 ## Service APIs
