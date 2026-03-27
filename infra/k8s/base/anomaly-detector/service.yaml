@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: anomaly-detector
+  labels:
+    app: anomaly-detector
+spec:
+  ports:
+    - port: 8006
+      targetPort: 8006
+      protocol: TCP
+      name: http
+  selector:
+    app: anomaly-detector
+  type: ClusterIP

@@ -9,6 +9,7 @@ resources:
   - db
   - product
   - ai-operator
+  - anomaly-detector
 
 secretGenerator:
   - name: archaics-secrets
