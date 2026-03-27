@@ -40,22 +40,48 @@ This chain is what enables Root Cause Analysis in Layer 2.
 
 ## Quick Start
 
-### With Docker (recommended)
+### 1. With Kubernetes / Minikube (Recommended for AI-Ops)
+
+To run the full stack (including apps, Prometheus, Jaeger, Loki, and Grafana) locally on a Kubernetes cluster:
+
+```bash
+# 1. Start Minikube
+minikube start
+
+# 2. Point terminal to Minikube's Docker daemon
+# PowerShell:
+minikube docker-env | Invoke-Expression
+# Bash/Zsh:
+# eval $(minikube docker-env)
+
+# 3. Build application images directly into the Minikube registry
+docker build -t auth-service:latest ./auth
+docker build -t db-service:latest ./db
+docker build -t product-service:latest ./product
+
+# 4. Deploy Base Services and Observability Stack
+kubectl apply -k k8s/base
+kubectl apply -k k8s/observability
+
+# 5. Wait for pods to initialize
+kubectl get pods -A -w
+
+# 6. Expose Dashboards via Port-Forwarding
+# (Run these in separate terminal tabs)
+kubectl port-forward svc/grafana 3000:3000 -n observability
+kubectl port-forward svc/jaeger-all-in-one-query 16686:16686 -n observability
+kubectl port-forward svc/product-service 8003:8003 -n archaics
+```
+
+### 2. With Docker Compose (Local Dev)
 
 ```bash
 docker compose -f infra/docker/docker-compose.yml up --build
 ```
 
-```
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo add jaegertracing https://jaegertracing.github.io/helm-charts
-helm repo add grafana https://grafana.github.io/helm-charts
-helm repo update
-```
-
 All three services start with health checks. `product-service` waits for the other two before starting.
 
-### Without Docker (local dev)
+### 3. Without Docker (Bare Metal)
 
 ```bash
 # Terminal 1 — Auth Service
