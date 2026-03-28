@@ -64,3 +64,4 @@ apps/dashboard/.env.local
 anomaly_detector_logs.txt
 latest_ai_operator_logs.txt
 ai_operator_logs.txt
+infra/k8s/base/kustomization.yaml
