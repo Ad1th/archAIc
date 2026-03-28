@@ -64,6 +64,8 @@ docker build -t auth-service:latest ./services/auth
 docker build -t db-service:latest ./services/db
 docker build -t product-service:latest ./services/product
 docker build -t payment-service:latest ./services/payment
+docker build -t anomaly-detector:latest ./services/anomaly-detector
+docker build -t ai-operator:latest ./services/ai-operator
 
 # 4. Deploy Base Services and Observability Stack
 kubectl apply -k infra/k8s/base
@@ -80,6 +82,10 @@ kubectl port-forward svc/product-service 8003:8003 -n archaics
 
 # Optional: payment service (if/when deployed in k8s base)
 # kubectl port-forward svc/payment-service 8004:8004 -n archaics
+
+# View AI-Ops Pipeline Logs
+# kubectl logs -f deployment/anomaly-detector -n archaics
+# kubectl logs -f deployment/ai-operator -n archaics
 ```
 
 ### 2. With Docker Compose (Local Dev)
@@ -391,10 +397,29 @@ This project lets you simulate those conditions safely, observe the resulting be
 
 ---
 
-## What's Next (Layer 2)
+## AI-Powered Remediation (Layer 2)
 
-- **Log ingestion** — pipe JSON logs to a collector
-- **Anomaly detection** — AI model on latency, error rate, log patterns
-- **Root cause analysis** — trace_id correlation across service logs
-- **Auto-remediation** — automated `POST /reset` when anomaly detected
-- **Dashboard** — real-time observability UI
+The system includes an `anomaly-detector` service and an `ai-operator` service that monitor the Prometheus metrics and automatically orchestrate fixes when services degrade using an LLM.
+
+### Testing the AI Recovery Pipeline
+
+We have provided a convenient script, `generate_errors.sh`, to inject failures and generate traffic so that the anomaly detection system triggers an alert and sends an automated payload to the AI operator.
+
+```bash
+# Before running make sure to expose the local ports for the services
+# Run the error generation script
+bash ./generate_errors.sh
+```
+
+Watch the autonomous system detect, analyze, and resolve the issue:
+
+```bash
+# Terminal 1: Watch the Anomaly Detector notice the issue and alert the AI Operator
+kubectl logs -f deployment/anomaly-detector -n archaics
+
+# Terminal 2: Watch the AI Operator analyze the metrics, determine root causes, and execute fixes
+kubectl logs -f deployment/ai-operator -n archaics
+
+# Terminal 3: Watch your Kubernetes pods auto-recover
+kubectl get pods -n archaics -w
+```

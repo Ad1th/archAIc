@@ -1,0 +1,15 @@
+# ── Payment Service Service ───────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+  labels:
+    app: payment-service
+    app.kubernetes.io/part-of: archaics
+spec:
+  selector:
+    app: payment-service
+  ports:
+    - name: http
+      port: 8004
+      targetPort: 8004

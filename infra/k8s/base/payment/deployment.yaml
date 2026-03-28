@@ -1,0 +1,61 @@
+# ── Payment Service Deployment ────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+  labels:
+    app: payment-service
+    app.kubernetes.io/part-of: archaics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "8004"
+    spec:
+      containers:
+        - name: payment-service
+          image: payment-service:latest
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 8004
+          env:
+            - name: AUTH_SERVICE_URL
+              value: "http://auth-service.archaics.svc.cluster.local:8001"
+            - name: DB_SERVICE_URL
+              value: "http://db-service.archaics.svc.cluster.local:8002"
+            - name: STRIPE_API_KEY
+              value: "sk_test_dummy"
+            - name: REQUEST_TIMEOUT
+              value: "8"
+            - name: OTEL_SERVICE_NAME
+              value: "payment-service"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://jaeger-all-in-one-otlp.observability.svc.cluster.local:4318"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8004
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8004
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
