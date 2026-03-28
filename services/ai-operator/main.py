@@ -26,6 +26,8 @@ logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 logger.propagate = False
 
+execution_history = []
+
 def _log(level: str, message: str, trace_id: str = "N/A"):
     extra = {"trace_id": trace_id}
     getattr(logger, level.lower())(message, extra=extra)
@@ -86,6 +88,17 @@ TASK: Output ONLY raw JSON matching this structure:
         ai_response = json.loads(raw_text.strip())
         _log("info", f"Remediation generated successfully: {json.dumps(ai_response)}", payload.trace_id)
         
+        execution_history.append({
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "trace_id": payload.trace_id,
+            "service": payload.service,
+            "alert_type": payload.alert_type,
+            "evidence": payload.context,
+            "ai_response": ai_response,
+        })
+        if len(execution_history) > 50:
+            execution_history.pop(0)
+            
         return {
             "status": "success",
             "ai_operator_response": ai_response
@@ -98,3 +111,7 @@ TASK: Output ONLY raw JSON matching this structure:
 @app.get("/health")
 async def health():
     return {"status": "healthy", "key_loaded": bool(API_KEY)}
+
+@app.get("/history")
+async def get_history():
+    return {"history": execution_history}

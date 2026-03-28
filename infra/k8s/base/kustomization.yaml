@@ -16,9 +16,10 @@ resources:
 secretGenerator:
   - name: archaics-secrets
     literals:
-      - jwt-secret=archaIc-secret-key-2024
-      - gemini-api-key=PLACEHOLDER_KEY
-      - stripe-api-key=sk_test_dummy
+      # Key names MUST match exactly what the deployment env vars reference
+      - JWT_SECRET=archaIc-secret-key-2024
+      - GEMINI_API_KEY=AIzaSyC0d6qsEPXvTmTNntAqtGqDQyaGk-3Xhlk
+      - STRIPE_API_KEY=sk_test_dummy
 
 generatorOptions:
   disableNameSuffixHash: true

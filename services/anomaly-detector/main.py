@@ -49,7 +49,18 @@ logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 logger.propagate = False
 
+log_history = []
+
 def _log(level: str, message: str):
+    log_obj = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "level": level.upper(),
+        "message": message
+    }
+    log_history.append(log_obj)
+    if len(log_history) > 50:
+        log_history.pop(0)
+        
     getattr(logger, level.lower())(message)
 
 # ─── App & Config ─────────────────────────────────────────────────────────────
@@ -223,6 +234,10 @@ def health():
         "history_size": len(metric_history),
         "min_samples_reached": len(metric_history) >= MIN_SAMPLES_FOR_TRAINING
     }
+
+@app.get("/history")
+def get_history():
+    return {"history": log_history}
 
 @app.get("/status")
 def status():
