@@ -33,19 +33,19 @@ Get-Content $EnvFile | Where-Object { $_ -match "^\s*[^#\s]" } | ForEach-Object 
     }
 }
 
-$GeminiKey = $envVars["GEMINI_API_KEY"]
-if ([string]::IsNullOrWhiteSpace($GeminiKey) -or $GeminiKey -eq "PLACEHOLDER_REPLACE_ME") {
-    Write-Error "GEMINI_API_KEY is missing or placeholder in .env. Set a real key first."
+$GroqKey = $envVars["GROQ_API_KEY"]
+if ([string]::IsNullOrWhiteSpace($GroqKey) -or $GroqKey -eq "PLACEHOLDER_REPLACE_ME") {
+    Write-Error "GROQ_API_KEY is missing or placeholder in .env. Set a real key first."
     exit 1
 }
 
-Write-Host "  GEMINI_API_KEY loaded: $($GeminiKey.Substring(0,6))..." -ForegroundColor Green
+Write-Host "  GROQ_API_KEY loaded: $($GroqKey.Substring(0,6))..." -ForegroundColor Green
 
-# ── 2. Patch the real key into kustomization.yaml ──────────────────────────
-Write-Host "`n[2/6] Patching GEMINI_API_KEY into kustomization.yaml ..." -ForegroundColor Cyan
+# ── 2. Patch the real keys into kustomization.yaml ──────────────────────────
+Write-Host "`n[2/6] Patching GROQ keys into kustomization.yaml ..." -ForegroundColor Cyan
 $KustFile = "$Infra\kustomization.yaml"
 $kustContent = Get-Content $KustFile -Raw
-$kustContent = $kustContent -replace "GEMINI_API_KEY=.*", "GEMINI_API_KEY=$GeminiKey"
+$kustContent = $kustContent -replace "GROQ_API_KEY=.*", "GROQ_API_KEY=$GroqKey"
 Set-Content $KustFile $kustContent -NoNewline
 Write-Host "  Done." -ForegroundColor Green
 
