@@ -39,7 +39,7 @@ export function FailureControl({ onInject, onReset, pendingAction }: FailureCont
   const isResetting = pendingAction === "reset";
 
   return (
-    <Card className="h-full">
+    <Card className="h-full bg-[#fdfbf7]">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -131,7 +131,7 @@ export function FailureControl({ onInject, onReset, pendingAction }: FailureCont
           </div>
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-black/20 p-4">
+        <div className="rounded-2xl border border-border bg-[rgba(255,255,255,0.62)] p-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Zap className="h-4 w-4 text-primary" />
             Active profile
@@ -146,7 +146,7 @@ export function FailureControl({ onInject, onReset, pendingAction }: FailureCont
 
         <div className="flex flex-col gap-3 sm:flex-row">
           <Button
-            className="flex-1"
+            className="flex-1 rounded-xl"
             disabled={isInjecting}
             onClick={() =>
               onInject({
@@ -160,7 +160,7 @@ export function FailureControl({ onInject, onReset, pendingAction }: FailureCont
           >
             {isInjecting ? "Injecting..." : "Inject Failure"}
           </Button>
-          <Button className="flex-1" variant="outline" disabled={isResetting} onClick={() => onReset(service)}>
+          <Button className="flex-1 rounded-xl" variant="outline" disabled={isResetting} onClick={() => onReset(service)}>
             <RefreshCcw className="mr-2 h-4 w-4" />
             {isResetting ? "Resetting..." : "Reset"}
           </Button>

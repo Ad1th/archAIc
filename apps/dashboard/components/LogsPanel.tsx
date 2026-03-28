@@ -22,7 +22,7 @@ export function LogsPanel({ logs }: { logs: LogEntry[] }) {
   }, [logs, serviceFilter, traceFilter]);
 
   return (
-    <Card className="h-full">
+    <Card className="h-full bg-[#fdfbf7]">
       <CardHeader>
         <CardTitle>Live Logs</CardTitle>
         <CardDescription>Streaming structured events with service and trace correlation.</CardDescription>
@@ -59,10 +59,10 @@ export function LogsPanel({ logs }: { logs: LogEntry[] }) {
           </div>
         </div>
 
-        <div className="max-h-[440px] overflow-y-auto rounded-3xl border border-white/10 bg-black/25">
-          <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="sticky top-0 bg-[#0f1726]/90 backdrop-blur">
-              <tr className="border-b border-white/10 text-xs uppercase tracking-[0.22em] text-muted-foreground">
+        <div className="max-h-[440px] overflow-y-auto rounded-2xl border border-border bg-[rgba(255,255,255,0.72)]">
+          <table className="w-full min-w-[720px] text-left font-mono text-sm">
+            <thead className="sticky top-0 bg-[#f6f0e8]/95 backdrop-blur">
+              <tr className="border-b border-border text-xs uppercase tracking-[0.22em] text-muted-foreground">
                 <th className="px-4 py-3">Timestamp</th>
                 <th className="px-4 py-3">Service</th>
                 <th className="px-4 py-3">Message</th>
@@ -70,13 +70,18 @@ export function LogsPanel({ logs }: { logs: LogEntry[] }) {
               </tr>
             </thead>
             <tbody>
-              {filteredLogs.map((entry) => (
-                <tr key={entry.id} className="border-b border-white/5 align-top">
+              {filteredLogs.map((entry, index) => (
+                <tr
+                  key={entry.id}
+                  className={index % 2 === 0 ? "border-b border-border/60 bg-[#fffdfa] align-top" : "border-b border-border/60 bg-[#f9f3eb] align-top"}
+                >
                   <td className="px-4 py-3 text-muted-foreground">
                     {new Date(entry.timestamp).toLocaleTimeString()}
                   </td>
                   <td className="px-4 py-3">
-                    <span className="rounded-full bg-white/5 px-2 py-1 text-xs">{entry.service}</span>
+                    <span className="rounded-full border border-border bg-secondary px-2 py-1 text-xs text-foreground">
+                      {entry.service}
+                    </span>
                   </td>
                   <td className="px-4 py-3 text-foreground">{entry.message}</td>
                   <td className="px-4 py-3 font-mono text-xs text-primary">{entry.trace_id}</td>

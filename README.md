@@ -139,6 +139,8 @@ Use this mapping:
 kubectl port-forward svc/auth-service 8101:8001 -n archaics
 kubectl port-forward svc/db-service 8102:8002 -n archaics
 kubectl port-forward svc/product-service 8103:8003 -n archaics
+kubectl port-forward svc/ai-operator 8105:8005 -n archaics
+kubectl port-forward svc/anomaly-detector 8106:8006 -n archaics
 
 # If payment-service exists in your cluster:
 # kubectl port-forward svc/payment-service 8104:8004 -n archaics

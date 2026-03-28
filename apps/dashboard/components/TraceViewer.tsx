@@ -24,14 +24,14 @@ export function TraceViewer({ trace, suggestedTraceId, onLookup, loading }: Trac
   }, [suggestedTraceId]);
 
   return (
-    <Card className="h-full">
+    <Card className="h-full bg-[#fdfbf7]">
       <CardHeader>
         <div className="flex items-center justify-between gap-4">
           <div>
             <CardTitle>Trace Viewer</CardTitle>
             <CardDescription>Follow a request path across the distributed graph.</CardDescription>
           </div>
-          <div className="rounded-2xl border border-accent/20 bg-accent/10 p-3 text-accent">
+          <div className="rounded-2xl border border-accent/30 bg-accent/10 p-3 text-primary">
             <Route className="h-5 w-5" />
           </div>
         </div>
@@ -46,7 +46,7 @@ export function TraceViewer({ trace, suggestedTraceId, onLookup, loading }: Trac
 
         {trace ? (
           <>
-            <div className="rounded-3xl border border-white/10 bg-black/20 p-4">
+            <div className="rounded-2xl border border-border bg-[rgba(255,255,255,0.68)] p-4">
               <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Flow Summary</p>
               <p className="mt-2 text-sm leading-6 text-foreground">{trace.summary}</p>
             </div>
@@ -58,17 +58,24 @@ export function TraceViewer({ trace, suggestedTraceId, onLookup, loading }: Trac
                       className={cn(
                         "flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold",
                         step.status === "error"
-                          ? "border-danger/40 bg-danger/15 text-danger"
+                          ? "border-danger/50 bg-danger/15 text-[#9b625b]"
                           : step.status === "warn"
-                            ? "border-warning/40 bg-warning/15 text-warning"
-                            : "border-success/40 bg-success/15 text-success",
+                            ? "border-warning/50 bg-warning/20 text-[#9c7b53]"
+                            : "border-[#b7a186] bg-[#efe3d0] text-[#7b654e]",
                       )}
                     >
                       {index + 1}
                     </div>
-                    {index < trace.steps.length - 1 ? <ArrowRight className="mt-2 h-4 w-4 text-muted-foreground" /> : null}
+                    {index < trace.steps.length - 1 ? <ArrowRight className="mt-2 h-4 w-4 text-accent" /> : null}
                   </div>
-                  <div className="flex-1 rounded-3xl border border-white/10 bg-black/20 p-4">
+                  <div
+                    className={cn(
+                      "flex-1 rounded-2xl border p-4",
+                      step.status === "ok"
+                        ? "border-[#dccfbf] bg-[#fcf7f0]"
+                        : "border-border bg-[rgba(255,255,255,0.68)]",
+                    )}
+                  >
                     <div className="flex flex-col justify-between gap-2 md:flex-row md:items-center">
                       <div>
                         <p className="text-sm font-semibold">{step.label}</p>
@@ -85,7 +92,7 @@ export function TraceViewer({ trace, suggestedTraceId, onLookup, loading }: Trac
             </div>
           </>
         ) : (
-          <div className="rounded-3xl border border-dashed border-white/15 bg-black/20 p-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-2xl border border-dashed border-border bg-[rgba(255,255,255,0.68)] p-8 text-center text-sm text-muted-foreground">
             Load the suggested trace to see the distributed request path.
           </div>
         )}

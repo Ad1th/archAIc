@@ -23,9 +23,9 @@ export function ServiceCard({ service }: { service: ServiceHealth }) {
   return (
     <Card
       className={cn(
-        "relative overflow-hidden",
-        isDegraded && "animate-pulse-glow border-warning/40",
-        isOffline && "border-danger/60",
+        "relative overflow-hidden bg-[#fdfbf7] hover:-translate-y-1",
+        isDegraded && "border-warning/70",
+        isOffline && "border-danger/70",
       )}
     >
       <div
@@ -41,7 +41,7 @@ export function ServiceCard({ service }: { service: ServiceHealth }) {
             {service.service}
           </p>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+        <div className="rounded-2xl border border-border bg-secondary p-3">
           <Icon className="h-5 w-5 text-primary" />
         </div>
       </CardHeader>
@@ -52,21 +52,21 @@ export function ServiceCard({ service }: { service: ServiceHealth }) {
             className={cn(
               "rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]",
               isOffline
-                ? "bg-danger/15 text-danger"
+                ? "bg-danger/15 text-[#9b625b]"
                 : isDegraded
-                  ? "bg-warning/15 text-warning"
-                  : "bg-success/15 text-success",
+                  ? "bg-warning/20 text-[#9c7b53]"
+                  : "bg-success/15 text-[#647b68]",
             )}
           >
             {service.status}
           </span>
         </div>
         <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+          <div className="rounded-2xl border border-border bg-[rgba(255,255,255,0.62)] p-4">
             <p className="text-muted-foreground">Failure</p>
             <p className="mt-2 font-medium text-foreground">{service.failure ?? "none"}</p>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+          <div className="rounded-2xl border border-border bg-[rgba(255,255,255,0.62)] p-4">
             <p className="text-muted-foreground">Latency</p>
             <p className="mt-2 font-medium text-foreground">
               {service.latencyMs === null ? "offline" : `${service.latencyMs} ms`}

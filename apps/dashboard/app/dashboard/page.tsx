@@ -131,7 +131,16 @@ export default function DashboardPage() {
   return (
     <main className="panel-grid min-h-screen px-4 py-6 sm:px-6 lg:px-10">
       <div className="mx-auto flex max-w-[1600px] flex-col gap-6">
-        <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#0b1220]/80 p-6 shadow-glow backdrop-blur-xl lg:p-8">
+        <section className="rounded-2xl border border-border bg-[rgba(255,255,255,0.72)] px-6 py-5 shadow-sm">
+          <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-2xl font-semibold tracking-tight text-foreground">archAIc Control Plane</p>
+              <p className="mt-1 text-sm text-muted-foreground">Distributed systems dashboard with live control surfaces.</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="overflow-hidden rounded-2xl border border-border bg-[rgba(255,255,255,0.78)] p-6 shadow-sm lg:p-8">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <p className="text-xs uppercase tracking-[0.38em] text-primary">archAIc observability</p>
@@ -153,7 +162,7 @@ export default function DashboardPage() {
         </section>
 
         {errorMessage ? (
-          <div className="rounded-3xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+          <div className="rounded-2xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-[#9b625b] shadow-sm">
             {errorMessage}
           </div>
         ) : null}
@@ -197,9 +206,9 @@ function HeroStat({
   icon: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur">
+    <div className="rounded-2xl border border-border bg-[rgba(255,255,255,0.7)] p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <div className="flex items-center gap-3">
-        <div className="rounded-2xl border border-white/10 bg-black/20 p-2.5">
+        <div className="rounded-2xl border border-border bg-secondary p-2.5">
           <Icon className="h-4 w-4 text-primary" />
         </div>
         <div>
@@ -213,26 +222,26 @@ function HeroStat({
 
 function AlertsPanel({ alerts }: { alerts: AlertItem[] }) {
   return (
-    <Card className="h-full">
+    <Card className="h-full bg-[#fdfbf7]">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Alerts</CardTitle>
             <CardDescription>Error spikes, latency spikes, and unhealthy services.</CardDescription>
           </div>
-          <div className="rounded-2xl border border-warning/20 bg-warning/10 p-3 text-warning">
+          <div className="rounded-2xl border border-warning/30 bg-warning/10 p-3 text-primary">
             <RefreshCcwDot className="h-5 w-5" />
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
         {alerts.length === 0 ? (
-          <div className="rounded-3xl border border-white/10 bg-black/20 p-6 text-sm text-muted-foreground">
+          <div className="rounded-2xl border border-border bg-[rgba(255,255,255,0.68)] p-6 text-sm text-muted-foreground">
             No active alerts. System behavior is within expected bounds.
           </div>
         ) : (
           alerts.map((alert) => (
-            <div key={alert.id} className="rounded-3xl border border-white/10 bg-black/20 p-4">
+            <div key={alert.id} className="rounded-2xl border border-border bg-[rgba(255,255,255,0.68)] p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-medium text-foreground">{alert.title}</p>
@@ -242,10 +251,10 @@ function AlertsPanel({ alerts }: { alerts: AlertItem[] }) {
                   className={cn(
                     "rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]",
                     alert.severity === "critical"
-                      ? "bg-danger/15 text-danger"
+                      ? "bg-danger/15 text-[#9b625b]"
                       : alert.severity === "high"
-                        ? "bg-warning/15 text-warning"
-                        : "bg-accent/15 text-accent",
+                        ? "bg-warning/20 text-[#9c7b53]"
+                        : "bg-accent/15 text-[#8a7258]",
                   )}
                 >
                   {alert.severity}

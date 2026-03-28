@@ -3,28 +3,28 @@
 @tailwind utilities;
 
 :root {
-  --background: 220 27% 8%;
-  --foreground: 42 33% 95%;
-  --card: 219 24% 12%;
-  --card-foreground: 40 30% 93%;
-  --popover: 219 24% 12%;
-  --popover-foreground: 40 30% 93%;
-  --primary: 43 94% 61%;
-  --primary-foreground: 220 30% 10%;
-  --secondary: 213 22% 17%;
-  --secondary-foreground: 40 24% 92%;
-  --muted: 217 18% 18%;
-  --muted-foreground: 214 14% 67%;
-  --accent: 198 73% 46%;
-  --accent-foreground: 211 100% 98%;
-  --destructive: 1 72% 55%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 219 19% 22%;
-  --input: 219 19% 22%;
-  --ring: 43 94% 61%;
-  --success: 154 63% 46%;
-  --warning: 38 92% 55%;
-  --danger: 1 72% 55%;
+  --background: 38 36% 96%;
+  --foreground: 0 0% 12%;
+  --card: 36 43% 99%;
+  --card-foreground: 0 0% 12%;
+  --popover: 36 43% 99%;
+  --popover-foreground: 0 0% 12%;
+  --primary: 28 21% 53%;
+  --primary-foreground: 36 43% 99%;
+  --secondary: 36 24% 93%;
+  --secondary-foreground: 0 0% 12%;
+  --muted: 34 26% 94%;
+  --muted-foreground: 0 0% 42%;
+  --accent: 35 40% 64%;
+  --accent-foreground: 0 0% 12%;
+  --destructive: 9 41% 66%;
+  --destructive-foreground: 0 0% 12%;
+  --border: 36 25% 88%;
+  --input: 36 25% 88%;
+  --ring: 35 40% 64%;
+  --success: 130 17% 54%;
+  --warning: 35 40% 64%;
+  --danger: 9 41% 66%;
   --font-sans: "Avenir Next", "Segoe UI", sans-serif;
 }
 
@@ -39,27 +39,27 @@ html {
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(20, 137, 179, 0.22), transparent 32%),
-    radial-gradient(circle at top right, rgba(246, 196, 70, 0.14), transparent 30%),
-    linear-gradient(180deg, #0b1220 0%, #070b13 100%);
+    radial-gradient(circle at top left, rgba(200, 169, 126, 0.16), transparent 32%),
+    radial-gradient(circle at top right, rgba(161, 134, 111, 0.12), transparent 34%),
+    linear-gradient(180deg, #f8f5f0 0%, #f3eee6 100%);
   color: hsl(var(--foreground));
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 ::selection {
-  background: rgba(246, 196, 70, 0.25);
+  background: rgba(200, 169, 126, 0.24);
   color: hsl(var(--foreground));
 }
 
 @layer utilities {
   .glass-panel {
-    @apply border border-white/10 bg-white/5 backdrop-blur-xl;
+    @apply border bg-[rgba(255,255,255,0.72)] backdrop-blur-sm;
   }
 
   .panel-grid {
     background-image:
-      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-    background-size: 40px 40px;
+      linear-gradient(rgba(161, 134, 111, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(161, 134, 111, 0.08) 1px, transparent 1px);
+    background-size: 48px 48px;
   }
 }

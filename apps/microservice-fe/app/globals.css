@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at top, rgba(214, 185, 140, 0.18), transparent 36%),
+    linear-gradient(180deg, #f6f1eb 0%, #f3ece4 100%);
+  color: #1e1e1e;
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+}
+
+::selection {
+  background: rgba(197, 106, 61, 0.2);
+}
