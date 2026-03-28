@@ -25,6 +25,14 @@ Client
   │
   ▼
 Payment Service   :8004   ← Checkout flow, calls auth + db (+ Stripe)
+
+Cluster Observability Stack
+  │
+  ▼
+Anomaly Detector  :8006   ← ML Model: Proxies Prometheus metrics & runs Isolation Forest
+  │
+  ▼
+AI Operator       :8005   ← AI Model: Receives ML webhooks, executes Gemini LLM recovery
 ```
 
 **Dependency graph:** `product → auth`, `product → db`, `payment → auth`, `payment → db`, `payment → stripe`
@@ -81,10 +89,15 @@ kubectl get pods -A -w
 # (Run these in separate terminal tabs)
 kubectl port-forward svc/grafana 3000:3000 -n observability
 kubectl port-forward svc/jaeger-all-in-one-query 16686:16686 -n observability
-kubectl port-forward svc/product-service 8003:8003 -n archaics
+kubectl port-forward svc/prometheus 9090:9090 -n observability
 
-# Optional: payment service (if/when deployed in k8s base)
-# kubectl port-forward svc/payment-service 8004:8004 -n archaics
+# Expose Application Services
+kubectl port-forward svc/product-service 8003:8003 -n archaics
+kubectl port-forward svc/payment-service 8004:8004 -n archaics
+
+# Expose AI-Ops Services
+kubectl port-forward svc/ai-operator 8005:8005 -n archaics
+kubectl port-forward svc/anomaly-detector 8006:8006 -n archaics
 
 # View AI-Ops Pipeline Logs
 # kubectl logs -f deployment/anomaly-detector -n archaics
@@ -133,6 +146,8 @@ Use this mapping:
 - `db -> 8102`
 - `product -> 8103`
 - `payment -> 8104`
+- `ai-operator -> 8105`
+- `anomaly-detector -> 8106`
 - `dashboard -> 7000`
 
 #### Option A: Kubernetes port-forward (auth/db/product from cluster)
@@ -142,11 +157,9 @@ Use this mapping:
 kubectl port-forward svc/auth-service 8101:8001 -n archaics
 kubectl port-forward svc/db-service 8102:8002 -n archaics
 kubectl port-forward svc/product-service 8103:8003 -n archaics
+kubectl port-forward svc/payment-service 8104:8004 -n archaics
 kubectl port-forward svc/ai-operator 8105:8005 -n archaics
 kubectl port-forward svc/anomaly-detector 8106:8006 -n archaics
-
-# If payment-service exists in your cluster:
-# kubectl port-forward svc/payment-service 8104:8004 -n archaics
 ```
 
 #### Option B: Bare-metal services on alternate ports
@@ -361,6 +374,28 @@ Mobile-friendly interface to control the entire system:
 | POST   | `/inject-failure?type=X` | Inject failure                      |
 | POST   | `/reset`                 | Clear failure                       |
 
+### Payment Service — `http://localhost:8004`
+
+| Method | Endpoint                    | Description                                |
+| ------ | --------------------------- | ------------------------------------------ |
+| POST   | `/create-checkout-session`  | Creates a Stripe checkout session          |
+| GET    | `/health`                   | Health + failure state                     |
+| POST   | `/inject-failure?type=X`    | Inject failure                             |
+| POST   | `/reset`                    | Clear failure                              |
+
+### AI Operator — `http://localhost:8005`
+
+| Method | Endpoint      | Description                                                |
+| ------ | ------------- | ---------------------------------------------------------- |
+| POST   | `/analyze`    | Receives anomaly webhook, queries Gemini & initiates fixes |
+| GET    | `/health`     | Health check for the AI agent                              |
+
+### Anomaly Detector — `http://localhost:8006`
+
+| Method | Endpoint      | Description                                                |
+| ------ | ------------- | ---------------------------------------------------------- |
+| GET    | `/health`     | Returns ML status and number of baseline samples gathered  |
+
 ---
 
 ## Failure Injection System
@@ -511,31 +546,26 @@ The same `trace_id` appears across **all** services for a single request chain �
 
 ---
 
-## Why This Matters
-
-Real distributed systems fail in unpredictable ways: partial outages, latency spikes, and bad downstream data are common in production.
-This project lets you simulate those conditions safely, observe the resulting behavior via trace-linked logs, and validate resilience strategies before real incidents occur.
-
----
-
 ## AI-Powered Remediation (Layer 2)
 
-The system includes an `anomaly-detector` service and an `ai-operator` service that monitor the Prometheus metrics and automatically orchestrate fixes when services degrade using an LLM.
+The system includes two sophisticated observability services that monitor the Prometheus metrics and automatically orchestrate fixes using an LLM:
+1. `anomaly-detector`: Analyzes multivariate metrics (Latency, Error Rate, CPU usage) continuously using an internal Isolation Forest to predict system decay.
+2. `ai-operator`: Triggered by the anomaly detector to orchestrate automatic fixes.
 
 ### Testing the AI Recovery Pipeline
 
-We have provided a convenient script, `generate_errors.sh`, to inject failures and generate traffic so that the anomaly detection system triggers an alert and sends an automated payload to the AI operator.
+We have provided a convenient script, `generate_errors.ps1` (or `.sh`), to inject failures and generate authentic traffic hitting the DB and Auth endpoints so that the anomaly detection system triggers an alert and sends an automated payload to the AI operator.
 
 ```bash
 # Before running make sure to expose the local ports for the services
 # Run the error generation script
-bash ./generate_errors.sh
+./generate_errors.ps1
 ```
 
 Watch the autonomous system detect, analyze, and resolve the issue:
 
 ```bash
-# Terminal 1: Watch the Anomaly Detector notice the issue and alert the AI Operator
+# Terminal 1: Watch the Anomaly Detector compute anomalies and trigger webhooks
 kubectl logs -f deployment/anomaly-detector -n archaics
 
 # Terminal 2: Watch the AI Operator analyze the metrics, determine root causes, and execute fixes

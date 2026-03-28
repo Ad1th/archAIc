@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: anomaly-detector
-          image: anomaly-detector:latest
+          image: anomaly-detector:v2
           imagePullPolicy: Never
           ports:
             - name: http

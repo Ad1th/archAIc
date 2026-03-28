@@ -12,6 +12,7 @@ resources:
   - ai-operator
   - anomaly-detector
 
+
 secretGenerator:
   - name: archaics-secrets
     literals:

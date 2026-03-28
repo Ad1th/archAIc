@@ -32,7 +32,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: archaics-secrets
-                  key: jwt-secret
+                  key: JWT_SECRET
             - name: OTEL_SERVICE_NAME
               value: "auth-service"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
