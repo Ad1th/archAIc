@@ -3,8 +3,8 @@ import json
 import logging
 from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException, Request
-from pydantic import BaseModel
-import google.genai as genai
+from pydantic import BaseModel, Field
+from groq import Groq
 
 class JSONFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
@@ -34,13 +34,15 @@ def _log(level: str, message: str, trace_id: str = "N/A"):
 
 app = FastAPI(title="AI Operator Service", version="1.0.0")
 
-API_KEY = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+API_KEY = os.environ.get("GROQ_API_KEY")
 if not API_KEY:
-    _log("error", "GEMINI_API_KEY environment variable is missing! Gemini calls will fail.")
+    _log("error", "GROQ_API_KEY environment variable is missing! Groq calls will fail.")
 else:
-    _log("info", f"Loaded Gemini API Key: {API_KEY[:4]}...{API_KEY[-4:]}")
+    _log("info", f"Loaded Groq API Key: {API_KEY[:4]}...{API_KEY[-4:]}")
 
-client = genai.Client(api_key=API_KEY)
+client = Groq(
+    api_key=API_KEY,
+)
 
 class AlertPayload(BaseModel):
     service: str
@@ -54,16 +56,22 @@ async def analyze_alert(payload: AlertPayload, request: Request):
     _log("info", f"Analyzing {payload.service}: {payload.alert_type}", payload.trace_id)
     
     prompt = f"""
-SYSTEM: You are an expert Kubernetes Site Reliability Engineer.
+SYSTEM: You are an expert Kubernetes Site Reliability Engineer managing the 'archaics' namespace.
 Analyze this outage:
 SERVICE: {payload.service}
 ALERT: {payload.alert_type} - {payload.description}
 CONTEXT: {payload.context}
 
-TASK: Output ONLY raw JSON matching this structure:
+CRITICAL REQUIREMENT: The "command" field MUST contain a strict, valid kubectl command that directly mitigates the issue in the 'archaics' namespace.
+Examples of valid commands you should emit depending on the outage:
+- Restarting (clears transient errors/timeouts): kubectl rollout restart deployment/<target_service> -n archaics
+- Scaling up (handles CPU/latency spikes): kubectl scale deployment/<target_service> --replicas=3 -n archaics
+- Spinning down (prevents bad data cascade): kubectl scale deployment/<target_service> --replicas=0 -n archaics
+
+TASK: Output ONLY valid JSON matching this structure:
 {{
-  "root_cause": "string",
-  "confidence": float,
+  "root_cause": "Explanation of what induced the outage",
+  "confidence": 0.95,
   "action_type": "scale | rollback | restart",
   "target": "deployment_name",
   "command": "kubectl command"
@@ -71,21 +79,17 @@ TASK: Output ONLY raw JSON matching this structure:
 """
 
     try:
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt,
+        response = client.chat.completions.create(
+            model='openai/gpt-oss-20b',
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.2,
         )
         
-        raw_text = response.text.strip()
-        
-        if raw_text.startswith("```"):
-            lines = raw_text.splitlines()
-            if lines[0].startswith("```"):
-                raw_text = "\n".join(lines[1:-1])
-            else:
-                raw_text = raw_text.strip("`")
-        
-        ai_response = json.loads(raw_text.strip())
+        # Parse the JSON string from the response
+        ai_response = json.loads(response.choices[0].message.content)
         _log("info", f"Remediation generated successfully: {json.dumps(ai_response)}", payload.trace_id)
         
         execution_history.append({
@@ -105,7 +109,7 @@ TASK: Output ONLY raw JSON matching this structure:
         }
 
     except Exception as e:
-        _log("error", f"Gemini API failure: {str(e)}", payload.trace_id)
+        _log("error", f"Groq API failure: {str(e)}", payload.trace_id)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")
