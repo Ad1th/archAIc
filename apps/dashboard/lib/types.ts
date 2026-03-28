@@ -49,9 +49,32 @@ export type AlertItem = {
   timestamp: string;
 };
 
+export type AIEvidenceEntry = {
+  timestamp: string;
+  trace_id: string;
+  service: string;
+  alert_type: string;
+  evidence: string;
+  ai_response: {
+    root_cause: string;
+    confidence: number;
+    action_type: string;
+    target: string;
+    command: string;
+  };
+};
+
+export type MLLogEntry = {
+  timestamp: string;
+  level: string;
+  message: string;
+};
+
 export type DashboardSnapshot = {
   services: ServiceHealth[];
   logs: LogEntry[];
+  mlLogs: MLLogEntry[];
+  aiEvidence: AIEvidenceEntry[];
   metrics: MetricPoint[];
   alerts: AlertItem[];
   recommendedTraceId: string;

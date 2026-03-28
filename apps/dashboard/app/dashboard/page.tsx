@@ -5,6 +5,8 @@ import { AlertOctagon, BellRing, Network, RefreshCcwDot } from "lucide-react";
 
 import { FailureControl } from "@/components/FailureControl";
 import { LogsPanel } from "@/components/LogsPanel";
+import { MLLogsPanel } from "@/components/MLLogsPanel";
+import { AIEvidencePanel } from "@/components/AIEvidencePanel";
 import { MetricsCharts } from "@/components/MetricsCharts";
 import { ServiceCard } from "@/components/ServiceCard";
 import { TraceViewer } from "@/components/TraceViewer";
@@ -190,6 +192,11 @@ export default function DashboardPage() {
         <section className="grid gap-5 xl:grid-cols-[1.25fr,0.75fr]">
           <LogsPanel logs={snapshot.logs} />
           <AlertsPanel alerts={snapshot.alerts} />
+        </section>
+
+        <section className="grid gap-5 xl:grid-cols-2 pb-6">
+          <AIEvidencePanel evidence={snapshot.aiEvidence} />
+          <MLLogsPanel logs={snapshot.mlLogs} />
         </section>
       </div>
     </main>
