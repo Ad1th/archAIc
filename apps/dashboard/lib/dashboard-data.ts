@@ -12,6 +12,7 @@ import {
 } from "@/lib/types";
 
 const requestTimeoutMs = 1800;
+const mlTimeoutMs = 4000;
 
 type SnapshotStore = {
   metrics: MetricPoint[];
@@ -219,6 +220,27 @@ function appendLogs(servicesHealth: ServiceHealth[], traceId: string) {
 export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
   const store = getStore();
   const servicesHealth = await Promise.all(services.map((service) => fetchServiceHealth(service.id)));
+  
+  const aiOperatorUrl = process.env.AI_OPERATOR_URL ?? "http://127.0.0.1:8005";
+  const anomalyDetectorUrl = process.env.ANOMALY_DETECTOR_URL ?? "http://127.0.0.1:8006";
+
+  const [aiHistoryRes, mlHistoryRes] = await Promise.all([
+    fetch(`${aiOperatorUrl}/history`, { cache: "no-store", signal: AbortSignal.timeout(mlTimeoutMs) }).catch(() => null),
+    fetch(`${anomalyDetectorUrl}/history`, { cache: "no-store", signal: AbortSignal.timeout(mlTimeoutMs) }).catch(() => null),
+  ]);
+
+  let aiEvidence = [];
+  if (aiHistoryRes && aiHistoryRes.ok) {
+    const data = await aiHistoryRes.json();
+    aiEvidence = (data.history ?? []).reverse();
+  }
+
+  let mlLogs = [];
+  if (mlHistoryRes && mlHistoryRes.ok) {
+    const data = await mlHistoryRes.json();
+    mlLogs = (data.history ?? []).reverse();
+  }
+
   const recommendedTraceId = createTraceId();
   store.lastTraceId = recommendedTraceId;
   appendLogs(servicesHealth, recommendedTraceId);
@@ -230,10 +252,41 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
   return {
     services: servicesHealth,
     logs: store.logs,
+    mlLogs,
+    aiEvidence,
     metrics: store.metrics,
     alerts,
     recommendedTraceId,
   };
+}
+
+/** Maps a UI failure injection to a synthetic metric vector for the anomaly-detector. */
+function buildSyntheticMetrics(
+  type: FailureType,
+  intensity: number,
+): { error_rate: number; latency_p95: number; cpu_usage: number } {
+  // intensity is 0-100 from the UI slider — normalise to 0-1
+  const i = Math.min(1, Math.max(0, intensity / 100));
+
+  switch (type) {
+    case "error":
+      // High error rate, moderate latency, normal CPU
+      return { error_rate: 0.05 + i * 0.95, latency_p95: 0.3 + i * 1.2, cpu_usage: 0.02 + i * 0.1 };
+    case "timeout":
+      // Massive latency spike, low error rate at first, normal CPU
+      return { error_rate: 0.01 + i * 0.2, latency_p95: 1.5 + i * 8.0, cpu_usage: 0.02 + i * 0.05 };
+    case "cpu":
+      // High CPU, elevated latency, low-ish errors
+      return { error_rate: 0.01 + i * 0.15, latency_p95: 0.2 + i * 2.5, cpu_usage: 0.3 + i * 0.7 };
+    case "crash":
+      // Max everything — service is down
+      return { error_rate: 0.8 + i * 0.2, latency_p95: 5.0 + i * 5.0, cpu_usage: 0.0 };
+    case "bad_data":
+      // Moderate errors, slight latency, normal CPU
+      return { error_rate: 0.1 + i * 0.4, latency_p95: 0.2 + i * 0.8, cpu_usage: 0.02 + i * 0.08 };
+    default:
+      return { error_rate: 0.1, latency_p95: 0.5, cpu_usage: 0.05 };
+  }
 }
 
 export async function triggerFailure(payload: {
@@ -262,7 +315,26 @@ export async function triggerFailure(payload: {
     throw new Error(`Failed to inject failure on ${service.name}`);
   }
 
-  return response.json();
+  const result = await response.json();
+
+  // ── Forward synthetic metrics to the anomaly-detector ──────────────────
+  // The anomaly-detector polls Prometheus, which may lag or not capture
+  // the injected failures at all. We push the equivalent metric vector
+  // directly so the ML model sees the degradation immediately.
+  const anomalyDetectorUrl = process.env.ANOMALY_DETECTOR_URL ?? "http://127.0.0.1:8006";
+  const syntheticMetrics = buildSyntheticMetrics(payload.type, payload.intensity);
+  try {
+    await fetch(`${anomalyDetectorUrl}/inject-metrics`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...syntheticMetrics, repeat: 3, force_trigger: false }),
+      signal: AbortSignal.timeout(mlTimeoutMs),
+    });
+  } catch {
+    // Non-fatal — the microservice failure already succeeded
+  }
+
+  return result;
 }
 
 export async function resetFailure(serviceId: ServiceId) {
@@ -277,7 +349,20 @@ export async function resetFailure(serviceId: ServiceId) {
     throw new Error(`Failed to reset ${service.name}`);
   }
 
-  return response.json();
+  const result = await response.json();
+
+  // ── Also reset the anomaly-detector so it re-baselines on clean traffic ─
+  const anomalyDetectorUrl = process.env.ANOMALY_DETECTOR_URL ?? "http://127.0.0.1:8006";
+  try {
+    await fetch(`${anomalyDetectorUrl}/reset`, {
+      method: "POST",
+      signal: AbortSignal.timeout(mlTimeoutMs),
+    });
+  } catch {
+    // Non-fatal
+  }
+
+  return result;
 }
 
 function getStepStatus(

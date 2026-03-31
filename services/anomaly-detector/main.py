@@ -49,7 +49,18 @@ logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 logger.propagate = False
 
+log_history = []
+
 def _log(level: str, message: str):
+    log_obj = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "level": level.upper(),
+        "message": message
+    }
+    log_history.append(log_obj)
+    if len(log_history) > 50:
+        log_history.pop(0)
+        
     getattr(logger, level.lower())(message)
 
 # ─── App & Config ─────────────────────────────────────────────────────────────
@@ -59,12 +70,12 @@ app = FastAPI(title="ML Anomaly Detector", version="1.0.0")
 PROMETHEUS_URL = os.getenv("PROMETHEUS_URL", "http://prometheus:9090")
 AI_OPERATOR_URL = os.getenv("AI_OPERATOR_URL", "http://ai-operator:8005")
 
-POLL_INTERVAL_SEC = 10
-MAX_HISTORY = 360  # 1 hour of data at 1 poll per 10 seconds
-MIN_SAMPLES_FOR_TRAINING = 6  # Start fitting after ~1 minute of data
-CONTAMINATION = 0.25  # More sensitive: 25% expected anomaly rate
-COOLDOWN_SEC = 20 # don't fire anomaly webhook more than once every 20s
-ZSCORE_THRESHOLD = 1.5  # Secondary z-score check for small-scale shifts
+POLL_INTERVAL_SEC = 5
+MAX_HISTORY = 720  # 1 hour of data at 1 poll per 5 seconds
+MIN_SAMPLES_FOR_TRAINING = 12  # Build an accurate IsolationForest boundary over 60 seconds
+CONTAMINATION = 0.1  # Strict outlier threshold (top 10%)
+COOLDOWN_SEC = 20 # Prevent webhook spam
+ZSCORE_THRESHOLD = 2.0  # Require standard 95% confidence deviation
 
 # Store history as a deque of lists: [[error, latency, cpu], ...]
 metric_history = collections.deque(maxlen=MAX_HISTORY)
@@ -115,7 +126,7 @@ def trigger_webhook(description: str, metrics: dict):
     now = time.time()
     
     if now - last_anomaly_time < COOLDOWN_SEC:
-        _log("info", "Anomaly detected, but currently in 120s cooldown window. Ignoring.")
+        _log("info", f"Anomaly detected, but currently in {COOLDOWN_SEC}s cooldown window. Ignoring.")
         return
         
     last_anomaly_time = now
@@ -223,6 +234,10 @@ def health():
         "history_size": len(metric_history),
         "min_samples_reached": len(metric_history) >= MIN_SAMPLES_FOR_TRAINING
     }
+
+@app.get("/history")
+def get_history():
+    return {"history": log_history}
 
 @app.get("/status")
 def status():

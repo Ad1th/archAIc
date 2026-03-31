@@ -67,7 +67,7 @@ export default function CheckoutPage() {
   }, [router]);
 
   useEffect(() => {
-    if (searchParams.get("simulated") === "1") {
+    if (searchParams?.get("simulated") === "1") {
       void clearCart().catch(() => {
         // Silently handle cart clearing failure
       });
@@ -129,7 +129,7 @@ export default function CheckoutPage() {
               identity, reads the cart from DB, and creates a checkout session.
             </p>
 
-            {searchParams.get("simulated") === "1" ? (
+            {searchParams?.get("simulated") === "1" ? (
               <motion.div
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}

@@ -138,55 +138,21 @@ AUTH_SERVICE_URL=http://localhost:8001 DB_SERVICE_URL=http://localhost:8002 STRI
 uvicorn main:app --port 8004 --reload
 ```
 
-### 4. Run On Alternate Local Ports (when defaults are busy)
+### 4. Kubernetes Port-Forwarding (Required for Dashboard)
 
-Use this mapping:
-
-- `auth -> 8101`
-- `db -> 8102`
-- `product -> 8103`
-- `payment -> 8104`
-- `ai-operator -> 8105`
-- `anomaly-detector -> 8106`
-- `dashboard -> 7000`
-
-#### Option A: Kubernetes port-forward (auth/db/product from cluster)
+To interact with the services from your local machine (e.g. via the Dashboard), you must port-forward them:
 
 ```bash
-# Run each in a separate terminal
-kubectl port-forward svc/auth-service 8101:8001 -n archaics
-kubectl port-forward svc/db-service 8102:8002 -n archaics
-kubectl port-forward svc/product-service 8103:8003 -n archaics
-kubectl port-forward svc/payment-service 8104:8004 -n archaics
-kubectl port-forward svc/ai-operator 8105:8005 -n archaics
-kubectl port-forward svc/anomaly-detector 8106:8006 -n archaics
+# Run each in a separate terminal or as background jobs
+kubectl port-forward svc/auth-service 8001:8001 -n archaics
+kubectl port-forward svc/db-service 8002:8002 -n archaics
+kubectl port-forward svc/product-service 8003:8003 -n archaics
+kubectl port-forward svc/payment-service 8004:8004 -n archaics
+kubectl port-forward svc/ai-operator 8005:8005 -n archaics
+kubectl port-forward svc/anomaly-detector 8006:8006 -n archaics
 ```
 
-#### Option B: Bare-metal services on alternate ports
-
-```bash
-# Terminal 1 — Auth
-cd services/auth
-pip install -r requirements.txt
-uvicorn main:app --port 8101 --reload
-
-# Terminal 2 — DB
-cd services/db
-pip install -r requirements.txt
-uvicorn main:app --port 8102 --reload
-
-# Terminal 3 — Product
-cd services/product
-pip install -r requirements.txt
-AUTH_SERVICE_URL=http://localhost:8101 DB_SERVICE_URL=http://localhost:8102 \
-uvicorn main:app --port 8103 --reload
-
-# Terminal 4 — Payment
-cd services/payment
-pip install -r requirements.txt
-AUTH_SERVICE_URL=http://localhost:8101 DB_SERVICE_URL=http://localhost:8102 STRIPE_API_KEY=sk_test_dummy \
-uvicorn main:app --port 8104 --reload
-```
+A helper script `.\scripts\port-forward.ps1` is provided to run all of these automatically in the background on Windows.
 
 ### Dashboard & Observability
 
@@ -213,25 +179,16 @@ Phone-friendly UI to inject failures and run load tests:
 Open on laptop: `http://localhost:8080`
 Open on phone: `http://<laptop-ip>:8080`
 
-By default the dashboard targets:
+By default the dashboard targets the canonical service ports:
 
 - `AUTH_SERVICE_URL=http://127.0.0.1:8001`
 - `DB_SERVICE_URL=http://127.0.0.1:8002`
 - `PRODUCT_SERVICE_URL=http://127.0.0.1:8003`
 - `PAYMENT_SERVICE_URL=http://127.0.0.1:8004`
+- `AI_OPERATOR_URL=http://127.0.0.1:8005`
+- `ANOMALY_DETECTOR_URL=http://127.0.0.1:8006`
 
 Override those environment variables before `npm run dev` if your services are exposed elsewhere.
-
-Example (dashboard pointed at alternate local ports):
-
-```bash
-cd apps/dashboard
-AUTH_SERVICE_URL=http://127.0.0.1:8101 \
-DB_SERVICE_URL=http://127.0.0.1:8102 \
-PRODUCT_SERVICE_URL=http://127.0.0.1:8103 \
-PAYMENT_SERVICE_URL=http://127.0.0.1:8104 \
-npm run dev
-```
 
 ---
 
