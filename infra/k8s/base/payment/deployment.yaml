@@ -36,7 +36,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: archaics-secrets
-                  key: stripe-api-key
+                  key: STRIPE_API_KEY
             - name: ALLOW_MOCK_STRIPE
               value: "true"
             - name: FRONTEND_BASE_URL
